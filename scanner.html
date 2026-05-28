@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,9 +9,7 @@
   <meta name="viewport"
   content="width=device-width, initial-scale=1.0">
 
-  <title>Admin Scanner</title>
-
-  <link rel="stylesheet" href="style.css">
+  <title>Admin QR Scanner</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -27,6 +26,8 @@
 
     h1{
       margin-top:20px;
+      color:#00ff99;
+      text-shadow:0 0 10px #00ff99;
     }
 
     #reader{
@@ -36,20 +37,21 @@
       border:4px solid white;
       border-radius:20px;
       overflow:hidden;
+      box-shadow:0 0 20px #00ff99;
     }
 
     #status{
       margin-top:20px;
-      font-size:22px;
+      font-size:24px;
       font-weight:bold;
     }
 
-    .valid{
-      color:lime;
-    }
-
-    .invalid{
-      color:red;
+    .footer{
+      margin-top:40px;
+      color:#00ff99;
+      font-size:15px;
+      font-weight:bold;
+      text-shadow:0 0 10px #00ff99;
     }
 
   </style>
@@ -58,27 +60,51 @@
 
 <body>
 
-<h1>📷 Scan Ticket</h1>
+<h1>🎬 ADMIN SCANNER</h1>
 
 <div id="reader"></div>
 
 <p id="status">Starting Camera...</p>
 
+<p class="footer">
+⚡ Created By Anusara Amaranath ⚡
+</p>
+
 <script type="module">
 
+/* 🔐 PASSWORD PROTECTION */
+
+const password =
+prompt("Enter Admin Password");
+
+if(password !== "cinema123"){
+
+  document.body.innerHTML =
+
+  "<h1 style='color:red;margin-top:50px;'>❌ Access Denied</h1>";
+
+  throw new Error("Unauthorized");
+
+}
+
+/* 🔥 FIREBASE */
+
 import {
+
   db,
   doc,
   getDoc,
   updateDoc
+
 } from './firebase.js';
 
-const status =
-document.getElementById("status");
+/* 🔥 VARIABLES */
 
 let html5QrCode;
 
-let scanning = true;
+let scanned = false;
+
+/* 🔥 START SCANNER */
 
 async function startScanner(){
 
@@ -92,18 +118,18 @@ async function startScanner(){
 
     if(!devices.length){
 
-      status.innerHTML =
+      document.getElementById("status")
+      .innerHTML =
       "❌ No Camera Found";
-
-      status.className =
-      "invalid";
 
       return;
 
     }
 
+    /* 📷 BACK CAMERA */
+
     let cameraId =
-    devices[0].id;
+    devices[devices.length - 1].id;
 
     devices.forEach(device => {
 
@@ -116,8 +142,7 @@ async function startScanner(){
         label.includes("environment")
       ){
 
-        cameraId =
-        device.id;
+        cameraId = device.id;
 
       }
 
@@ -128,6 +153,7 @@ async function startScanner(){
       cameraId,
 
       {
+
         fps:10,
 
         qrbox:{
@@ -139,9 +165,11 @@ async function startScanner(){
 
       async(decodedText) => {
 
-        if(!scanning) return;
+        /* 🛑 STOP DUPLICATE SCAN */
 
-        scanning = false;
+        if(scanned) return;
+
+        scanned = true;
 
         try{
 
@@ -151,17 +179,17 @@ async function startScanner(){
           const id =
           url.searchParams.get("id");
 
+          /* ❌ INVALID QR */
+
           if(!id){
 
-            status.innerHTML =
-            "❌ Invalid QR";
-
-            status.className =
-            "invalid";
+            document.getElementById("status")
+            .innerHTML =
+            "❌ INVALID QR";
 
             speak("Invalid QR Code");
 
-            resetScanner();
+            scanned = false;
 
             return;
 
@@ -173,36 +201,45 @@ async function startScanner(){
           const snap =
           await getDoc(ticketRef);
 
+          /* ✅ TICKET EXISTS */
+
           if(snap.exists()){
 
             const data =
             snap.data();
 
+            /* ❌ USED */
+
             if(data.status === "used"){
 
-              status.innerHTML =
-              `❌ ALREADY USED <br> Seat : ${data.seat}`;
-
-              status.className =
-              "invalid";
+              document.getElementById("status")
+              .innerHTML =
+              "❌ ALREADY USED";
 
               speak(
+
               `Seat Number ${data.seat}. Already Used`
+
               );
 
             }
 
+            /* ✅ VALID */
+
             else{
 
-              status.innerHTML =
-              `✅ VALID TICKET <br> Seat : ${data.seat}`;
+              document.getElementById("status")
+              .innerHTML =
 
-              status.className =
-              "valid";
+              `✅ VALID - Seat ${data.seat}`;
 
               speak(
+
               `Valid Ticket. Seat Number ${data.seat}`
+
               );
+
+              /* 🔥 MARK USED */
 
               await updateDoc(ticketRef,{
 
@@ -214,72 +251,67 @@ async function startScanner(){
 
           }
 
+          /* ❌ INVALID */
+
           else{
 
-            status.innerHTML =
+            document.getElementById("status")
+            .innerHTML =
             "❌ INVALID TICKET";
-
-            status.className =
-            "invalid";
 
             speak("Invalid Ticket");
 
           }
 
+          /* 🔄 RESET */
+
+          setTimeout(() => {
+
+            scanned = false;
+
+            document.getElementById("status")
+            .innerHTML =
+            "📷 Ready To Scan";
+
+          },3000);
+
         }
 
-        catch(error){
+        catch(err){
 
-          console.log(error);
+          console.log(err);
 
-          status.innerHTML =
-          "❌ QR ERROR";
-
-          status.className =
-          "invalid";
+          scanned = false;
 
           speak("Error");
 
         }
 
-        resetScanner();
-
       }
 
     );
 
-    status.innerHTML =
+    document.getElementById("status")
+    .innerHTML =
     "📷 Camera Ready";
 
   }
 
-  catch(error){
+  catch(err){
 
-    console.log(error);
+    console.log(err);
 
-    status.innerHTML =
+    document.getElementById("status")
+    .innerHTML =
     "❌ Camera Error";
-
-    status.className =
-    "invalid";
 
   }
 
 }
 
-function resetScanner(){
-
-  setTimeout(() => {
-
-    scanning = true;
-
-  }, 3000);
-
-}
+/* 🔊 VOICE */
 
 function speak(text){
-
-  window.speechSynthesis.cancel();
 
   const speech =
   new SpeechSynthesisUtterance();
@@ -294,6 +326,8 @@ function speak(text){
 
 }
 
+/* 🚀 RUN */
+
 startScanner();
 
 </script>
@@ -301,3 +335,4 @@ startScanner();
 </body>
 
 </html>
+```
