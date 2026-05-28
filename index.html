@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Verify Ticket</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<h1 id="result">Checking...</h1>
+
+<script type="module">
+
+import {
+  db,
+  doc,
+  getDoc,
+  updateDoc
+} from './firebase.js';
+
+const params = new URLSearchParams(window.location.search);
+
+const id = params.get("id");
+
+const result = document.getElementById("result");
+
+const ticketRef = doc(db, "tickets", id);
+
+const snap = await getDoc(ticketRef);
+
+if (snap.exists()) {
+
+  const data = snap.data();
+
+  if (data.status === "used") {
+
+    result.innerHTML = "❌ ALREADY USED";
+    result.className = "invalid";
+
+  } else {
+
+    result.innerHTML = "✅ VALID TICKET";
+    result.className = "valid";
+
+    await updateDoc(ticketRef, {
+      status: "used"
+    });
+
+  }
+
+} else {
+
+  result.innerHTML = "❌ INVALID";
+  result.className = "invalid";
+
+}
+
+</script>
+
+</body>
+</html>

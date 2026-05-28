@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Generate Tickets</title>
+
+</head>
+
+<body>
+
+<h1>Generating Tickets...</h1>
+
+<script type="module">
+
+import { initializeApp }
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+
+import {
+getFirestore,
+doc,
+setDoc
+}
+from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+
+apiKey: "AIzaSyD35vtyzE1YrEDWdGVlc3iudAJsvEtqu60",
+
+authDomain: "countdown-horror.firebaseapp.com",
+
+projectId: "countdown-horror",
+
+storageBucket: "countdown-horror.firebasestorage.app",
+
+messagingSenderId: "1098077780359",
+
+appId: "1:1098077780359:web:aa11e5be22b3c039a77b22"
+
+};
+
+const app = initializeApp(firebaseConfig);
+
+const db = getFirestore(app);
+
+async function generateTickets(){
+
+let count = 6;
+
+const rows = ["A","B","C","D","E"];
+
+for(let row of rows){
+
+for(let i = 1; i <= 20; i++){
+
+if(count > 100) return;
+
+const ticketId =
+"MV" + String(count).padStart(3,'0');
+
+const seat =
+row + i;
+
+await setDoc(doc(db,"tickets",ticketId),{
+
+seat: seat,
+
+status: "unused"
+
+});
+
+console.log(ticketId + " added");
+
+count++;
+
+}
+
+}
+
+document.body.innerHTML =
+"<h1>✅ 100 Tickets Generated!</h1>";
+
+}
+
+generateTickets();
+
+</script>
+
+</body>
+
+</html>

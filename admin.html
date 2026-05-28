@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<title>Admin Scanner</title>
+
+<link rel="stylesheet" href="style.css">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+</head>
+
+<body>
+
+<h1>ADMIN SCANNER</h1>
+
+<div id="reader"></div>
+
+<h2 id="result"></h2>
+
+<script type="module">
+
+import { db, doc, getDoc, updateDoc } from './firebase.js';
+
+const result = document.getElementById("result");
+
+async function checkTicket(ticketId){
+
+const ticketRef = doc(db,"tickets",ticketId);
+
+const snap = await getDoc(ticketRef);
+
+if(snap.exists()){
+
+const data = snap.data();
+
+if(data.status === "unused"){
+
+result.innerHTML =
+"✅ VALID <br> Seat : " + data.seat;
+
+result.className = "valid";
+
+const speech =
+new SpeechSynthesisUtterance(
+"Seat " + data.seat
+);
+
+speechSynthesis.speak(speech);
+
+await updateDoc(ticketRef,{
+status:"used"
+});
+
+}else{
+
+result.innerHTML = "❌ USED";
+
+result.className = "invalid";
+
+}
+
+}else{
+
+result.innerHTML = "❌ INVALID";
+
+result.className = "invalid";
+
+}
+
+}
+
+function onScanSuccess(decodedText){
+
+checkTicket(decodedText);
+
+}
+
+const html5QrCode =
+new Html5Qrcode("reader");
+
+html5QrCode.start(
+{ facingMode: "environment" },
+{
+fps:10,
+qrbox:250
+},
+onScanSuccess
+);
+
+</script>
+
+</body>
+
+</html>
