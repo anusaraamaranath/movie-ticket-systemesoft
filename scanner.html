@@ -3,10 +3,12 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>QR Ticket Scanner</title>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+  content="width=device-width, initial-scale=1.0">
+
+  <title>QR Scanner</title>
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -15,15 +17,14 @@
     body{
       margin:0;
       padding:0;
-      background:#000;
-      color:#fff;
-      font-family:Arial, sans-serif;
+      background:black;
+      color:white;
+      font-family:Arial;
       text-align:center;
     }
 
     h1{
       margin-top:20px;
-      font-size:32px;
     }
 
     #reader{
@@ -37,17 +38,7 @@
 
     #status{
       margin-top:20px;
-      font-size:20px;
-      color:lime;
-    }
-
-    button{
-      margin-top:20px;
-      padding:12px 25px;
-      font-size:18px;
-      border:none;
-      border-radius:10px;
-      cursor:pointer;
+      font-size:22px;
     }
 
   </style>
@@ -56,30 +47,26 @@
 
 <body>
 
-<h1>📷 Scan Movie Ticket</h1>
+<h1>📷 Scan Ticket</h1>
 
 <div id="reader"></div>
 
-<p id="status">Starting camera...</p>
+<p id="status">Starting Camera...</p>
 
-<button onclick="startScanner()">
-Restart Scanner
-</button>
+<script type="module">
 
-<script>
+import {
+  db,
+  doc,
+  getDoc,
+  updateDoc
+} from './firebase.js';
 
 let html5QrCode;
 
 async function startScanner(){
 
-  document.getElementById("status").innerHTML =
-  "Starting camera...";
-
   try{
-
-    if(html5QrCode){
-      await html5QrCode.stop();
-    }
 
     html5QrCode =
     new Html5Qrcode("reader");
@@ -87,10 +74,10 @@ async function startScanner(){
     const devices =
     await Html5Qrcode.getCameras();
 
-    if(!devices || devices.length === 0){
+    if(!devices.length){
 
-      document.getElementById("status").innerHTML =
-      "❌ No Camera Found";
+      document.getElementById("status")
+      .innerHTML = "❌ No Camera Found";
 
       return;
 
@@ -98,10 +85,10 @@ async function startScanner(){
 
     let cameraId = devices[0].id;
 
-    for(let i = 0; i < devices.length; i++){
+    devices.forEach(device => {
 
       const label =
-      devices[i].label.toLowerCase();
+      device.label.toLowerCase();
 
       if(
         label.includes("back") ||
@@ -109,12 +96,11 @@ async function startScanner(){
         label.includes("environment")
       ){
 
-        cameraId = devices[i].id;
-        break;
+        cameraId = device.id;
 
       }
 
-    }
+    });
 
     await html5QrCode.start(
 
@@ -128,22 +114,97 @@ async function startScanner(){
         }
       },
 
-      (decodedText) => {
+      async(decodedText) => {
 
-        document.getElementById("status").innerHTML =
-        "✅ QR Detected";
+        try{
 
-        window.location.href = decodedText;
+          const url =
+          new URL(decodedText);
 
-      },
+          const id =
+          url.searchParams.get("id");
 
-      (errorMessage) => {
+          if(!id){
+
+            speak("Invalid QR Code");
+
+            document.getElementById("status")
+            .innerHTML =
+            "❌ Invalid QR";
+
+            return;
+
+          }
+
+          const ticketRef =
+          doc(db,"tickets",id);
+
+          const snap =
+          await getDoc(ticketRef);
+
+          if(snap.exists()){
+
+            const data =
+            snap.data();
+
+            if(data.status === "used"){
+
+              document.getElementById("status")
+              .innerHTML =
+              "❌ ALREADY USED";
+
+              speak(
+              `Seat Number ${data.seat}. Already Used`
+              );
+
+            }
+
+            else{
+
+              document.getElementById("status")
+              .innerHTML =
+              `✅ VALID - Seat ${data.seat}`;
+
+              speak(
+              `Valid Ticket. Seat Number ${data.seat}`
+              );
+
+              await updateDoc(ticketRef,{
+
+                status:"used"
+
+              });
+
+            }
+
+          }
+
+          else{
+
+            document.getElementById("status")
+            .innerHTML =
+            "❌ INVALID TICKET";
+
+            speak("Invalid Ticket");
+
+          }
+
+        }
+
+        catch(err){
+
+          console.log(err);
+
+          speak("Error");
+
+        }
 
       }
 
     );
 
-    document.getElementById("status").innerHTML =
+    document.getElementById("status")
+    .innerHTML =
     "📷 Camera Ready";
 
   }
@@ -152,14 +213,26 @@ async function startScanner(){
 
     console.log(err);
 
-    document.getElementById("status").innerHTML =
+    document.getElementById("status")
+    .innerHTML =
     "❌ Camera Error";
 
-    alert(
-      "Camera Error: " + err
-    );
-
   }
+
+}
+
+function speak(text){
+
+  const speech =
+  new SpeechSynthesisUtterance();
+
+  speech.text = text;
+
+  speech.lang = "en-US";
+
+  speech.rate = 1;
+
+  window.speechSynthesis.speak(speech);
 
 }
 
