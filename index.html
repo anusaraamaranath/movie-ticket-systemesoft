@@ -48,8 +48,6 @@ if (snap.exists()) {
     result.innerHTML = "✅ VALID TICKET";
     result.className = "valid";
 
-    await updateDoc(ticketRef, {
-      status: "used"
     });
 
   }
