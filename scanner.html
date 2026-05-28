@@ -1,0 +1,204 @@
+🔥 PRO QR MOVIE TICKET SYSTEM FEATURES
+📷 1. Live Camera QR Scanner
+scanner.html
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>QR Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+
+    body{
+      font-family:Arial;
+      text-align:center;
+    }
+
+    #reader{
+      width:300px;
+      margin:auto;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<h1>📷 Scan Ticket</h1>
+
+<div id="reader"></div>
+
+<script>
+
+function onScanSuccess(decodedText){
+
+  window.location.href = decodedText;
+
+}
+
+const html5QrCode = new Html5Qrcode("reader");
+
+Html5Qrcode.getCameras().then(devices => {
+
+  if(devices && devices.length){
+
+    html5QrCode.start(
+      devices[0].id,
+      {
+        fps:10,
+        qrbox:250
+      },
+      onScanSuccess
+    );
+
+  }
+
+});
+
+</script>
+
+</body>
+</html>
+🎟️ 2. Printable Cinema Ticket
+generate.html ticket section update
+document.getElementById("ticket").innerHTML = `
+
+<div class="movie-ticket">
+
+<h1>🎬 HORROR NIGHT</h1>
+
+<p>Date: June 8</p>
+
+<p>Seat: A12</p>
+
+<p>Ticket ID: ${ticketId}</p>
+
+<img src="
+https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${verifyUrl}
+">
+
+<button onclick="window.print()">
+🖨️ Print Ticket
+</button>
+
+</div>
+
+`;
+👨‍💼 3. Admin Dashboard
+admin.html
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Admin Dashboard</title>
+</head>
+
+<body>
+
+<h1>🎬 Admin Dashboard</h1>
+
+<p>Total Tickets: <span id="total"></span></p>
+
+<p>Used Tickets: <span id="used"></span></p>
+
+<p>Unused Tickets: <span id="unused"></span></p>
+
+<script type="module">
+
+import {
+  db
+} from './firebase.js';
+
+import {
+  collection,
+  getDocs
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const querySnapshot =
+await getDocs(collection(db,"tickets"));
+
+let total = 0;
+let used = 0;
+let unused = 0;
+
+querySnapshot.forEach((doc)=>{
+
+  total++;
+
+  if(doc.data().status === "used"){
+    used++;
+  }else{
+    unused++;
+  }
+
+});
+
+document.getElementById("total").innerHTML = total;
+document.getElementById("used").innerHTML = used;
+document.getElementById("unused").innerHTML = unused;
+
+</script>
+
+</body>
+</html>
+🪑 4. Seat Numbers
+generate.html
+const seats = [
+"A1","A2","A3","A4",
+"B1","B2","B3","B4"
+];
+
+const seat =
+seats[Math.floor(Math.random()*seats.length)];
+
+Firestore save:
+
+await setDoc(doc(db,"tickets",ticketId),{
+
+  status:"unused",
+  seat:seat
+
+});
+
+Ticket display:
+
+<p>Seat Number: ${seat}</p>
+🎬 5. Movie Details
+const movieName = "COUNTDOWN HORROR NIGHT";
+
+const movieDate = "June 8";
+
+const movieTime = "6.00 PM";
+
+Display:
+
+<h2>${movieName}</h2>
+
+<p>${movieDate}</p>
+
+<p>${movieTime}</p>
+📊 6. Ticket Counter
+Add inside admin.html
+<p>Remaining Tickets:
+<span id="remaining"></span>
+</p>
+document.getElementById("remaining")
+.innerHTML = unused;
+🔥 FINAL PAGES
+File	Purpose
+index.html	Verify Ticket
+generate.html	Generate QR Ticket
+scanner.html	Camera Scanner
+admin.html	Dashboard
+firebase.js	Firebase Config
+style.css	Design
+🌐 LINKS
+Generate Ticket
+https://movie-ticket-systemesoft.netlify.app/generate.html
+Scanner
+https://movie-ticket-systemesoft.netlify.app/scanner.html
+Admin
+https://movie-ticket-systemesoft.netlify.app/admin.html
