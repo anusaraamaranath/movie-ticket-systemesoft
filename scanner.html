@@ -1,14 +1,16 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
 
   <meta charset="UTF-8">
+
   <meta name="viewport"
   content="width=device-width, initial-scale=1.0">
 
-  <title>QR Scanner</title>
+  <title>Admin Scanner</title>
+
+  <link rel="stylesheet" href="style.css">
 
   <script src="https://unpkg.com/html5-qrcode"></script>
 
@@ -39,6 +41,15 @@
     #status{
       margin-top:20px;
       font-size:22px;
+      font-weight:bold;
+    }
+
+    .valid{
+      color:lime;
+    }
+
+    .invalid{
+      color:red;
     }
 
   </style>
@@ -62,7 +73,12 @@ import {
   updateDoc
 } from './firebase.js';
 
+const status =
+document.getElementById("status");
+
 let html5QrCode;
+
+let scanning = true;
 
 async function startScanner(){
 
@@ -76,14 +92,18 @@ async function startScanner(){
 
     if(!devices.length){
 
-      document.getElementById("status")
-      .innerHTML = "❌ No Camera Found";
+      status.innerHTML =
+      "❌ No Camera Found";
+
+      status.className =
+      "invalid";
 
       return;
 
     }
 
-    let cameraId = devices[0].id;
+    let cameraId =
+    devices[0].id;
 
     devices.forEach(device => {
 
@@ -96,7 +116,8 @@ async function startScanner(){
         label.includes("environment")
       ){
 
-        cameraId = device.id;
+        cameraId =
+        device.id;
 
       }
 
@@ -108,13 +129,19 @@ async function startScanner(){
 
       {
         fps:10,
+
         qrbox:{
           width:250,
           height:250
         }
+
       },
 
       async(decodedText) => {
+
+        if(!scanning) return;
+
+        scanning = false;
 
         try{
 
@@ -126,11 +153,15 @@ async function startScanner(){
 
           if(!id){
 
+            status.innerHTML =
+            "❌ Invalid QR";
+
+            status.className =
+            "invalid";
+
             speak("Invalid QR Code");
 
-            document.getElementById("status")
-            .innerHTML =
-            "❌ Invalid QR";
+            resetScanner();
 
             return;
 
@@ -149,9 +180,11 @@ async function startScanner(){
 
             if(data.status === "used"){
 
-              document.getElementById("status")
-              .innerHTML =
-              "❌ ALREADY USED";
+              status.innerHTML =
+              `❌ ALREADY USED <br> Seat : ${data.seat}`;
+
+              status.className =
+              "invalid";
 
               speak(
               `Seat Number ${data.seat}. Already Used`
@@ -161,9 +194,11 @@ async function startScanner(){
 
             else{
 
-              document.getElementById("status")
-              .innerHTML =
-              `✅ VALID - Seat ${data.seat}`;
+              status.innerHTML =
+              `✅ VALID TICKET <br> Seat : ${data.seat}`;
+
+              status.className =
+              "valid";
 
               speak(
               `Valid Ticket. Seat Number ${data.seat}`
@@ -181,9 +216,11 @@ async function startScanner(){
 
           else{
 
-            document.getElementById("status")
-            .innerHTML =
+            status.innerHTML =
             "❌ INVALID TICKET";
+
+            status.className =
+            "invalid";
 
             speak("Invalid Ticket");
 
@@ -191,37 +228,58 @@ async function startScanner(){
 
         }
 
-        catch(err){
+        catch(error){
 
-          console.log(err);
+          console.log(error);
+
+          status.innerHTML =
+          "❌ QR ERROR";
+
+          status.className =
+          "invalid";
 
           speak("Error");
 
         }
 
+        resetScanner();
+
       }
 
     );
 
-    document.getElementById("status")
-    .innerHTML =
+    status.innerHTML =
     "📷 Camera Ready";
 
   }
 
-  catch(err){
+  catch(error){
 
-    console.log(err);
+    console.log(error);
 
-    document.getElementById("status")
-    .innerHTML =
+    status.innerHTML =
     "❌ Camera Error";
+
+    status.className =
+    "invalid";
 
   }
 
 }
 
+function resetScanner(){
+
+  setTimeout(() => {
+
+    scanning = true;
+
+  }, 3000);
+
+}
+
 function speak(text){
+
+  window.speechSynthesis.cancel();
 
   const speech =
   new SpeechSynthesisUtterance();
@@ -243,4 +301,3 @@ startScanner();
 </body>
 
 </html>
-```
