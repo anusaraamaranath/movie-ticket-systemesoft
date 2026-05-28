@@ -46,7 +46,7 @@ Html5Qrcode.getCameras().then(devices => {
   if(devices && devices.length){
 
     html5QrCode.start(
-      devices[0].id,
+      devices[devices.length - 1].id
       {
         fps:10,
         qrbox:250
