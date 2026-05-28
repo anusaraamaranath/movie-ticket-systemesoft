@@ -23,6 +23,11 @@ const params = new URLSearchParams(window.location.search);
 
 const id = params.get("id");
 
+if (!id) {
+  document.getElementById("result").innerText = "No Ticket ID Found";
+  throw new Error("No ticket ID");
+}
+
 const result = document.getElementById("result");
 
 const ticketRef = doc(db, "tickets", id);
